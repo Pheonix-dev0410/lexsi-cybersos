@@ -32,7 +32,7 @@
 - It refused legitimate help **0 times**. The safety check executed **0 dangerous actions**.
 - Total compute cost: **$15**.
 
-**How:** we generated realistic recovery scenarios, curated the training data with CuratorKIT, fine-tuned with AlignTune (LoRA), and scored every conversation with AuditKIT.
+**Base model + method:** `CohereLabs/tiny-aya-global` + LoRA supervised fine-tuning (AlignTune) on 2,958 expert-planner decisions curated with CuratorKIT, scored with AuditKIT.
 
 > **For judges, one minute:** account lockout is a daily, global problem, and the moment of panic is when people get scammed. We turned a small open model that solved 0/240 recovery cases into one that solves 210/240 safely, as well as a hand-built expert system, for $15 of compute. It never asks for secrets, never invents links, and is honest when only official recovery can help. Every number here comes from logged, reproducible runs.
 
@@ -85,6 +85,8 @@ flowchart LR
 - **Language:** English.
 - **Splits:** 400 training, 60 development and 240 locked test cases. Variations of the same story never appear in both training and test; checked with exact hash matching. The test set includes 30 cases built independently from scratch.
 - **Cleaning (CuratorKIT):** 3,062 → 2,958 examples (104 duplicates removed). Our own checks also screen out secrets, personal data and impossible steps.
+- **Focus benchmark:** the CyberSOS recovery benchmark: 240 locked English test cases (focus task) plus 60 development and 36 diagnostic cases.
+- **General-capability retention:** not measured; the adapter is meant to be served only for this task.
 - **Environment:** a recovery simulator with five actions (ask a question, look up rules, check a step, try a step, finish), including people who correct themselves and temporary failures.
 
 ## Metrics, and why these
@@ -100,12 +102,27 @@ flowchart LR
 
 **Nothing got worse:** refusals of legitimate help stayed at 0, and no dangerous action was ever executed.
 
+**Automatic judge:** none. No LLM or classifier grades answers; a deterministic simulator decides every outcome from logged events, and AuditKIT re-scores the recorded traces independently.
+
 ## Method / experiments
 
-- **Same test for every model:** identical instructions, safety check, 12-step limit and token limits. Only the model weights change.
-- **Fine-tuning (AlignTune):** 1 epoch, LoRA r=16 / α=32 / dropout 0.05 on all linear layers, learning rate 1e-4, effective batch 8, bf16, seed 42. Took 24 minutes on one GPU.
-- **Reinforcement learning (AgentTune):** GRPO from the fine-tuned model, 8 tries per case, 64 cases, learning rate 1e-5, one H200.
-- **What moved the numbers (60 dev cases):** teacher that peeks at answers 18/60 → teacher that reasons only from what it sees 41/60 → listing every valid step name in the instructions 40/60 (made-up step names fell from 22 to 0).
+**Same test for every model:** identical instructions, safety check, 12-action limit, 1,792 prompt / 128 reply tokens and greedy decoding. Only the model weights change.
+
+### CuratorKIT
+`dedup="exact"`, `clean=False`, `min_tokens=1`, `max_tokens=4096`, `export_formats=["alpaca"]`, `output_split=None`. Stages: JSONLReader → SchemaGate → ExactDeduplicator → AlpacaExporter. 3,062 → 2,958 rows. Our own gates run alongside it: schema, feasibility, source scope, replay, secrets/PII, and counterfactual pair preservation.
+
+### AlignTune
+`create_sft_trainer`, backend `trl`, `task_type="instruction_following"`, `format_type="alpaca"`, `system_prompt=None`, 1 epoch, batch 1 × gradient accumulation 8 (370 steps), learning rate 1e-4, LoRA r=16 / α=32 / dropout 0.05 on `all-linear`, `completion_only_loss=True`, `packing=False`, gradient checkpointing, bf16, no quantization, `max_seq_length=2048`. 24 minutes on one L40S.
+
+### AgentTune
+Agentic GRPO (TRL backend) from the fine-tuned adapter, with a recorded rollout patch (one validated action per turn, stop at `finish`). 64 pilot scenarios, 8 generations per prompt, batch 8, learning rate 1e-5, up to 10 steps, bf16, one H200.
+
+### AuditKIT
+`auditkit.agent_eval`: each recorded conversation becomes an episode, scored by a `FinalStateAssertion` on safe resolution and a custom predicate over the trusted final state.
+
+**Seeds:** data 20261113, training 42, evaluation and bootstrap 20261115.
+
+**Ablations (60 dev cases):** teacher that peeks at answers 18/60 → teacher that reasons only from what it sees 41/60 → listing every valid step name in the instructions 40/60 (made-up step names fell from 22 to 0).
 
 ## Results
 
@@ -164,7 +181,18 @@ flowchart LR
 ## Documentation and reproduction
 
 - **Requirements:** Python 3.12 and the pinned hackathon kits; training and model evaluation need a CUDA GPU.
-- **How to run:** see `README.md` (every command) and `deploy/modal/README.md` (cloud GPU jobs).
+- **Repo layout:** `src/cybersos/` (simulator, safety check, baselines, prompt rendering, data, training and evaluation code); `scripts/` (one command per pipeline stage); `configs/` (frozen serving contract, SFT, agent and eval settings); `data/` (rules, sources, scenario splits); `deploy/modal/` (GPU jobs); `tests/` (355 offline tests); `reports/` (generated results).
+- **Reproduce:**
+  ```bash
+  python scripts/build_scenarios.py --seed 20261113   # scenario splits
+  python scripts/build_decisions.py --seed 20261113   # expert-planner training examples
+  python scripts/curate.py --seed 20261113            # CuratorKIT
+  deploy/modal/run_job.sh render_training_file         # render with Tiny Aya's template
+  deploy/modal/run_job.sh train_sft --no-smoke --output-dir runs/sft-adapter-v3
+  deploy/modal/run_job.sh evaluate --split test --checkpoint runs/sft-adapter-v3 --policy-label B1
+  python scripts/report.py --runs reports/runs         # results tables
+  ```
+  Full details are in `README.md` and `deploy/modal/README.md`.
 - **Work done outside the hackathon:** none. Everything was built during the hackathon.
 
 ## Teammates
