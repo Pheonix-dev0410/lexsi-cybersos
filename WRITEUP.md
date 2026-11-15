@@ -101,7 +101,7 @@ B0 → B1: **+87.5 pts** safe success, 95% CI [82.4, 92.4], paired bootstrap ove
 
 ## Cost / ROI
 
-- **Compute:** Modal, about 3 L40S-hours (snapshot, smoke and full SFT ×3, dev/test evals) plus about 1 H200-hour (AgentTune). Estimated total ≈ $10 at list prices **[TODO: confirm against the Modal bill]**.
+- **Compute:** Modal, about 3 L40S-hours (snapshot, smoke and full SFT ×3, dev/test evals) plus about 1 H200-hour (AgentTune). Total bill: **$15**.
 - **Serving:** B1 averages 8.2 s per episode (about 8 model calls) on one L40S with HF `generate`, not vLLM. That is ≈ 2.3 GPU-hours per 1k episodes, about $4.50 per 1k episodes or ≈ $0.56 per 1k replies. No closed-model API baseline was run.
 
 ## Limitations
