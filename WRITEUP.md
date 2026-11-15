@@ -127,13 +127,13 @@ B0 → B1: **+87.5 pts** safe success, 95% CI [82.4, 92.4], paired bootstrap ove
 
 - **Environment:** Python 3.12, `pyyaml`, plus the pinned kits; training and inference need CUDA (L40S or better).
 - **Repo layout and run instructions:** see `README.md` and `deploy/modal/README.md`. Modal jobs: `resolve_runtime`, `diagnose_base`, `render_training_file`, `train_sft`, `evaluate`, `train_agent`.
-- **Work done outside the hackathon:** none **[TODO: confirm]**.
+- **Work done outside the hackathon:** none. Everything was built during the hackathon.
 
 ## Teammates
 
-- **Pranav Garg** (lead): problem framing and project plan; simulator, guard and policy pipeline; SFT and AgentTune training runs; evaluation and write-up.
-- **Rudr Pratap Singh**: recovery-rule and scenario review against official help pages; analysis of evaluation results and failure cases.
-- **Nikunj Kumar**: GPU compute and infrastructure (Modal workspace) for snapshotting, training and evaluation runs.
+- **Pranav Garg** (lead): project plan and serving contract; the observed-state teacher switch that lifted SFT from 18/60 to 41/60 on dev; compact prompt rendering that made every decision fit Tiny Aya's budget; SFT training and the locked test evaluation (0/240 → 210/240).
+- **Rudr Pratap Singh**: recovery rules and sources from official help pages; scenario generation, root-level splits and leak checks; CuratorKIT curation and data gates.
+- **Nikunj Kumar**: GPU compute and Modal infrastructure; baselines (Q, R) and AuditKIT scoring; AgentTune integration and GRPO runs.
 
 ## LLM usage statement
 
