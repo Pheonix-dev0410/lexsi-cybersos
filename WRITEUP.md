@@ -3,7 +3,9 @@
 **One-line claim:** SFT on 2,958 planner-verified decisions takes `tiny-aya-global` from 0/240 to 210/240 safely resolved recovery episodes on a locked test set (+87.5 points, 95% CI [82.4, 92.4]), matching the rule planner it was distilled from.
 
 **Tracks and problem statements covered**
-- Track 1: Fine-tuning and Data Curation (CuratorKIT → AlignTune → AuditKIT). **[TODO: problem statement number]**
+- Track 1: Fine-tuning and Data Curation (CuratorKIT → AlignTune → AuditKIT)
+  - Problem statement 3: Grounded answers and fewer hallucinations. Every action must come from 16 reviewed rules drawn from official help pages. The model says so when no supported path exists, and unsupported proposals are counted.
+  - Problem statement 5: Structured output and extraction. Each turn is exactly one schema-validated JSON action; output-format failures fell from 240/240 to 5/240.
 - AgentTune (Track 3 tooling) was integrated and run, but produced no usable adapter (see Results). We do not claim Track 3.
 
 **Content warning:** none. All scenarios are synthetic; no real accounts, credentials or personal data.
