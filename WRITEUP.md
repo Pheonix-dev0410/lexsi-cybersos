@@ -131,7 +131,9 @@ B0 → B1: **+87.5 pts** safe success, 95% CI [82.4, 92.4], paired bootstrap ove
 
 ## Teammates
 
-**[TODO: team members and contributions]**
+- **Pranav Garg** (lead): problem framing and project plan; simulator, guard and policy pipeline; SFT and AgentTune training runs; evaluation and write-up.
+- **Rudr Pratap Singh**: recovery-rule and scenario review against official help pages; analysis of evaluation results and failure cases.
+- **Nikunj Kumar**: GPU compute and infrastructure (Modal workspace) for snapshotting, training and evaluation runs.
 
 ## LLM usage statement
 
