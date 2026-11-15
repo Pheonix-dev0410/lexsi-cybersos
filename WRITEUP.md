@@ -131,7 +131,7 @@ B0 → B1: **+87.5 pts** safe success, 95% CI [82.4, 92.4], paired bootstrap ove
 
 ## Teammates
 
-- **Pranav Garg**: teacher and prompt design, SFT training and evaluation.
+- **Pranav Garg**: serving contract and compact prompt design; observed-state teacher for the training data; AlignTune SFT training and the locked test evaluation.
 - **Rudr Pratap Singh**: recovery rules and sources from official help pages; scenario generation, root-level splits and leak checks; CuratorKIT curation and data gates.
 - **Nikunj Kumar**: GPU compute and Modal infrastructure; baselines (Q, R) and AuditKIT scoring; AgentTune integration and GRPO runs.
 
