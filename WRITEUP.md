@@ -131,7 +131,7 @@ B0 → B1: **+87.5 pts** safe success, 95% CI [82.4, 92.4], paired bootstrap ove
 
 ## Teammates
 
-- **Pranav Garg** (lead): project plan and serving contract; the observed-state teacher switch that lifted SFT from 18/60 to 41/60 on dev; compact prompt rendering that made every decision fit Tiny Aya's budget; SFT training and the locked test evaluation (0/240 → 210/240).
+- **Pranav Garg**: teacher and prompt design, SFT training and evaluation.
 - **Rudr Pratap Singh**: recovery rules and sources from official help pages; scenario generation, root-level splits and leak checks; CuratorKIT curation and data gates.
 - **Nikunj Kumar**: GPU compute and Modal infrastructure; baselines (Q, R) and AuditKIT scoring; AgentTune integration and GRPO runs.
 
