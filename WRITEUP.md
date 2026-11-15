@@ -2,6 +2,12 @@
 
 **One-line claim:** We fine-tuned a small, open Cohere model to guide people through account recovery step by step. On 240 unseen test cases it went from solving **0** to solving **210**, never asking for a password or code.
 
+| 0 → 210 | +87.5 pts | 0 | 0 | $15 |
+| :---: | :---: | :---: | :---: | :---: |
+| test cases solved, before → after | improvement (95% CI +82 to +92) | passwords or codes requested | dangerous actions executed | total compute |
+
+**In one sentence:** when someone is locked out and panicking, CyberSOS gives them the next step they can *actually* take, the way a calm security expert would, and it is built so it *cannot* do what a scammer would do.
+
 **Track and problem statements**
 - **Track 1: Fine-tuning and Data Curation** (CuratorKIT → AlignTune → AuditKIT)
   - **Problem statement 3, Grounded answers and fewer hallucinations:** every step the model suggests must come from official Google help pages, and it says so honestly when no supported path exists.
@@ -54,7 +60,17 @@
 | **AuditKIT** (`556eb48`) | Independently scored every recorded conversation from the true outcomes, not from what the model claimed. |
 | **AgentTune** (`1dfd054`) | Tried reinforcement learning on top. It ran, but there was nothing left to learn from (see "What didn't work"). |
 
-**How they connect:** realistic scenarios → expert step-by-step examples → **CuratorKIT** cleaning → **AlignTune** fine-tuning → the same test harness for every model → **AuditKIT** scoring.
+**How they connect:**
+
+```mermaid
+flowchart LR
+    A[16 rules from official<br/>Google help pages] --> B[Recovery simulator<br/>700 scenarios]
+    B --> C[Expert planner<br/>step-by-step examples]
+    C --> D[CuratorKIT<br/>clean + dedupe]
+    D --> E[AlignTune<br/>LoRA fine-tuning]
+    E --> F[Same test for every model<br/>+ safety check]
+    F --> G[AuditKIT<br/>independent scoring]
+```
 
 ## Models and licenses
 
@@ -104,8 +120,15 @@
 
 **What we found**
 1. **The model had good instincts but couldn't follow the rules of the conversation.** Before training it suggested sensible steps, but never in the safe, checkable format. Fine-tuning fixed that.
-2. **What you learn from matters most.** Learning from a teacher that reasons only from visible information more than doubled the score.
-3. **It now matches the expert planner** and is better at recognising when someone needs official help.
+2. **Key insight: a model can only learn reasoning it can see.** Our first teacher made decisions using hidden information the model never gets, and the model learned to guess the most common answer (18/60). A teacher that decides only from what the person has said more than doubled the score (41/60). This lesson applies to any agent trained by imitation.
+3. **A $15 model now matches a hand-built expert system.** It solves as many cases overall (210 vs 211) and is better at recognising when someone needs official help (157 vs 152).
+
+**Why you can trust these numbers**
+- **Locked test set:** 240 cases never seen in training, checked for overlap by exact hashing, including 30 cases built independently from scratch.
+- **Strict scoring:** success comes from the simulator's true outcome, never from what the model claims. Unsafe suggestions count against the model even when blocked.
+- **Fair comparison:** every model gets the identical instructions, safety check and limits; only the weights change.
+- **Statistics:** 95% confidence intervals from a paired bootstrap that resamples whole scenario groups.
+- **Fully reproducible:** every conversation, score and configuration is public (links below), and so are the negative results.
 
 **What didn't work**
 - **Reinforcement learning.** After fine-tuning the model was so consistent that all 8 tries per case were identical, so there was nothing to compare and learn from.
