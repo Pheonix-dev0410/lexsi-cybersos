@@ -1,0 +1,95 @@
+--- a/src/agenttune/agentic/rollout_engines/rollout_factory.py
++++ b/src/agenttune/agentic/rollout_engines/rollout_factory.py
+@@ -1845,6 +1845,8 @@
+     tools_fallback_prompt: str | None = DEFAULT_TOOLS_FALLBACK_PROMPT,
+     tool_result_format: str = DEFAULT_TOOL_RESULT_FORMAT,
+ ) -> Trajectory:
++    cybersos_adapter = gen_kwargs.get("_cybersos_adapter")
++    gen_kwargs = {k: v for k, v in gen_kwargs.items() if k != "_cybersos_adapter"}
+     gold = None
+     if isinstance(prompt, dict) and prompt.get("role") is None and "prompt" in prompt:
+         gold = prompt.get("answer")
+@@ -1926,6 +1928,9 @@
+             _compl = getattr(_targs, "max_completion_length", None) if _targs else None
+             if _vllm_len:
+                 _gen_budget = max(int(_vllm_len) - (int(_compl) if _compl else 2048) - 64, 512)
++        if cybersos_adapter is not None:
++            _gen_budget = None
++            schemas = []
+         if _gen_budget is not None:
+             _tok = tokenizer
+             if _tok is None and trainer is not None:
+@@ -1943,14 +1948,17 @@
+ 
+         # ── Path A: trainer-based generation ─────────────────────────────────
+         if trainer is not None:
+-            prompt_text = _render_chat_template(
+-                tokenizer,
+-                conversation,
+-                schemas,
+-                enable_thinking=enable_thinking,
+-                tool_result_format=tool_result_format,
+-                tokenize=False,
+-            )
++            if cybersos_adapter is not None:
++                prompt_text = cybersos_adapter.prefix(conversation, tokenizer)
++            else:
++                prompt_text = _render_chat_template(
++                    tokenizer,
++                    conversation,
++                    schemas,
++                    enable_thinking=enable_thinking,
++                    tool_result_format=tool_result_format,
++                    tokenize=False,
++                )
+ 
+             # ── vLLM trainer path — custom rollout via TRL's colocated vLLM ──
+             # Uses trl.experimental.openenv.generate_rollout_completions, the
+@@ -2014,6 +2022,7 @@
+                     return_tensors="pt",
+                     padding=True,
+                     padding_side="left",
++                    **({"add_special_tokens": False} if cybersos_adapter is not None else {}),
+                 )
+                 enc = {k: v.to(trainer.accelerator.device) for k, v in enc.items()}
+                 prompt_len = enc["input_ids"].shape[1]
+@@ -2046,7 +2055,9 @@
+                     )
+                     generate_kwargs = dict(
+                         **enc,
+-                        max_new_tokens=getattr(trainer, "_max_new_tokens", 256),
++                        max_new_tokens=(cybersos_adapter.budgets.generation_tokens
++                                        if cybersos_adapter is not None
++                                        else getattr(trainer, "_max_new_tokens", 256)),
+                         temperature=getattr(trainer, "_temperature", 0.7),
+                         do_sample=True,
+                         pad_token_id=_pad,
+@@ -2106,6 +2117,8 @@
+         # (97GB OOM on the eval path). Thread the cap through so the engine's
+         # own left-truncation at max_length becomes the hard backstop.
+         _engine_gen_cfg = dict(gen_kwargs) if gen_kwargs else {}
++        if cybersos_adapter is not None:
++            raise ValueError("CyberSOS training requires the verified trainer generation path")
+         if context_length is not None:
+             _engine_gen_cfg.setdefault("max_length", context_length)
+         # create_rollout_fn's own `enable_thinking` param never reached this
+@@ -2154,6 +2167,19 @@
+ 
+         return raw, structured, lp_tuples, meta
+ 
++    if cybersos_adapter is not None:
++        if trainer is not None and getattr(trainer, "use_vllm", False):
++            raise ValueError("CyberSOS has not validated vLLM training")
++        def _cybersos_extract(message, raw):
++            calls = _extract_tool_calls(message, raw) or []
++            cybersos_adapter.validate_calls(raw, calls)
++            return calls
++
++        return cybersos_adapter.run(
++            _gen, _cybersos_extract, tokenizer, Step, Trajectory,
++            all_completion_ids, all_logprobs, all_tool_mask,
++        )
++
+     # ── Single-turn (no tools) ────────────────────────────────────────────────
+     if not tools_enabled:
+         conversation = _build_conversation(prompt, system_prompt)

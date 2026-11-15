@@ -1,0 +1,25 @@
+schema_version: cybersos.eval.v1
+seed: 20261115
+mode: recorded
+case_count: 240
+action_budget: 12
+trials: 1
+observation_mode: structured
+decoding:
+  do_sample: false
+  max_new_tokens: 128
+  seed: 20261115
+protocol:
+  frozen: true
+  malformed_action_retries: 0
+  timeout_seconds: 60
+  generated_answer_cache_for_latency: false
+  retrieval_cache_conditions: equal
+  stop_tokens: []
+  post_processing: strict_core_parser
+  final_sweeps_per_checkpoint: 1
+bootstrap:
+  unit: scenario_root
+  repetitions: 2000
+  confidence: 0.95
+scorer_version: cybersos.safe_resolution.v1

@@ -1,0 +1,353 @@
+- id: use_accessible_backup_code
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_2sv
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    password_known: true
+    backup_code_exists: true
+    backup_code_accessible_now: true
+  scope_note: Use only an enrolled option offered by the official provider flow.
+  unknown_requires_question: true
+  user_instruction: Use your saved backup option only within official sign-in; never share its value here.
+  simulation_effect: attempt_provider_verification
+  real_account_effect: none
+  risk_level: low
+- id: use_independent_passkey
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_2sv
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    independent_passkey_available: true
+  scope_note: Use only an enrolled option offered by the official provider flow.
+  unknown_requires_question: true
+  user_instruction: Try the enrolled passkey on your accessible independent device.
+  simulation_effect: attempt_provider_verification
+  real_account_effect: none
+  risk_level: low
+- id: use_security_key
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_2sv
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    password_known: true
+    enrolled_security_key_available: true
+  scope_note: Use only an enrolled option offered by the official provider flow.
+  unknown_requires_question: true
+  user_instruction: Try your enrolled physical security key.
+  simulation_effect: attempt_provider_verification
+  real_account_effect: none
+  risk_level: low
+- id: use_alternate_number
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_2sv
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    password_known: true
+    alternate_number_accessible: true
+  scope_note: Use only an enrolled option offered by the official provider flow.
+  unknown_requires_question: true
+  user_instruction: Select the accessible enrolled alternate number in sign-in.
+  simulation_effect: attempt_provider_verification
+  real_account_effect: none
+  risk_level: low
+- id: use_available_phone
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_2sv
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    password_known: true
+    phone_available: true
+    device_signed_in: true
+  scope_note: Use only an enrolled option offered by the official provider flow.
+  unknown_requires_question: true
+  user_instruction: Use the available signed-in phone if offered for verification.
+  simulation_effect: attempt_provider_verification
+  real_account_effect: none
+  risk_level: low
+- id: use_trusted_session
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_2sv
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    active_session_elsewhere: true
+    reauthentication_available: true
+  scope_note: Use only an enrolled option offered by the official provider flow.
+  unknown_requires_question: true
+  user_instruction: Try the trusted session; additional verification may still be required.
+  simulation_effect: attempt_provider_verification
+  real_account_effect: none
+  risk_level: low
+- id: official_account_recovery
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_recover
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+  scope_note: Personal accounts only; submission establishes a handoff, never restored access.
+  unknown_requires_question: true
+  user_instruction: Follow official account recovery and await the provider decision.
+  simulation_effect: recovery_attempt
+  real_account_effect: none
+  risk_level: low
+- id: managed_account_boundary
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_recover
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: true
+  scope_note: Organization accounts require administrator guidance.
+  unknown_requires_question: true
+  user_instruction: Contact your organization administrator.
+  simulation_effect: provider_admin_handoff
+  real_account_effect: none
+  risk_level: low
+- id: child_account_boundary
+  provider: google_personal
+  incident:
+  - lost_phone
+  - lost_second_factor
+  - lockout
+  - exposed_password
+  source_ids:
+  - google_recover
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    child_account: true
+  scope_note: Child accounts are outside this personal-account workflow.
+  unknown_requires_question: true
+  user_instruction: Ask the supervising parent or provider for the supported child-account process.
+  simulation_effect: provider_admin_handoff
+  real_account_effect: none
+  risk_level: low
+- id: change_exposed_password
+  provider: google_personal
+  incident:
+  - exposed_password
+  - lost_phone
+  source_ids:
+  - google_compromised
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    account_access_available: true
+    reauthentication_available: true
+  scope_note: Protection after access is available; verification may be required.
+  unknown_requires_question: true
+  user_instruction: Change the exposed password inside your official account settings; never enter it
+    here.
+  simulation_effect: protective_step
+  real_account_effect: none
+  risk_level: low
+- id: review_security_activity
+  provider: google_personal
+  incident:
+  - exposed_password
+  - lost_phone
+  source_ids:
+  - google_compromised
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    account_access_available: true
+    reauthentication_available: true
+  scope_note: Protection after access is available; verification may be required.
+  unknown_requires_question: true
+  user_instruction: Review recent security activity and follow the provider prompts.
+  simulation_effect: protective_step
+  real_account_effect: none
+  risk_level: low
+- id: review_signed_in_devices
+  provider: google_personal
+  incident:
+  - exposed_password
+  - lost_phone
+  source_ids:
+  - google_compromised
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    account_access_available: true
+    reauthentication_available: true
+  scope_note: Protection after access is available; verification may be required.
+  unknown_requires_question: true
+  user_instruction: Review signed-in devices and follow provider guidance for unfamiliar devices.
+  simulation_effect: protective_step
+  real_account_effect: none
+  risk_level: low
+- id: enable_second_factor
+  provider: google_personal
+  incident:
+  - exposed_password
+  - lost_phone
+  source_ids:
+  - google_compromised
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    account_access_available: true
+    reauthentication_available: true
+  scope_note: Protection after access is available; verification may be required.
+  unknown_requires_question: true
+  user_instruction: Review and enable appropriate second-factor protection in account settings.
+  simulation_effect: protective_step
+  real_account_effect: none
+  risk_level: low
+- id: secure_android_device
+  provider: android
+  incident:
+  - lost_phone
+  source_ids:
+  - android_find
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    account_access_available: true
+    device_powered: true
+    device_online: true
+    device_signed_in: true
+    find_hub_enabled: true
+    visible_on_google_play: true
+    device_erased: false
+  scope_note: Requires provider sign-in and the documented remote-device prerequisites.
+  unknown_requires_question: true
+  user_instruction: Use Find Hub to mark the missing device as lost.
+  simulation_effect: protective_step
+  real_account_effect: none
+  risk_level: low
+- id: erase_android_device
+  provider: android
+  incident:
+  - lost_phone
+  source_ids:
+  - android_find
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+    account_access_available: true
+    device_powered: true
+    device_online: true
+    device_signed_in: true
+    find_hub_enabled: true
+    visible_on_google_play: true
+    device_erased: false
+  scope_note: Disabled by default; benchmark permission and explicit confirmation are required.
+  unknown_requires_question: true
+  user_instruction: Only after explicit confirmation, use Find Hub erasure; local data is permanently
+    removed and tracking ends.
+  simulation_effect: erase_device
+  real_account_effect: none
+  risk_level: high
+- id: android_account_recovery
+  provider: android
+  incident:
+  - lost_phone
+  - lockout
+  source_ids:
+  - google_recover
+  checked_on: '2026-11-15'
+  requires:
+    account_owner: true
+    organization_managed: false
+    child_account: false
+    safe_other_device: true
+  scope_note: Recover access first; provider review does not establish device access.
+  unknown_requires_question: true
+  user_instruction: Use official account recovery before attempting device management.
+  simulation_effect: recovery_attempt
+  real_account_effect: none
+  risk_level: low

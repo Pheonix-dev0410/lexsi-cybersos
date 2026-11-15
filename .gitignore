@@ -1,0 +1,20 @@
+.venv*/
+vendor/
+artifacts/
+runs/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.egg-info/
+# Regenerable pipeline outputs; published as Hugging Face datasets, not committed.
+data/candidates/
+data/curated/
+data/rendered/
+reports/runs/
+# Local-only: build plan, agent instructions and machine-specific check outputs.
+roadmap*.md
+AGENTS.md
+reports/diagnostic/
+reports/doctor-*.json
+reports/submission_inventory.*

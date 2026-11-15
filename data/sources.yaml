@@ -1,0 +1,25 @@
+- id: google_2sv
+  url: https://support.google.com/accounts/answer/185834?hl=en
+  title: Fix common issues with 2-Step Verification
+  scope:
+  - google_personal
+  checked_on: '2026-11-15'
+- id: google_recover
+  url: https://support.google.com/accounts/answer/7682439?hl=en
+  title: How to recover your Google Account or Gmail
+  scope:
+  - google_personal
+  - android
+  checked_on: '2026-11-15'
+- id: google_compromised
+  url: https://support.google.com/accounts/answer/6294825?hl=en
+  title: Secure a hacked or compromised Google Account
+  scope:
+  - google_personal
+  checked_on: '2026-11-15'
+- id: android_find
+  url: https://support.google.com/android/answer/6160491?hl=en
+  title: Find, secure, or erase a lost Android device
+  scope:
+  - android
+  checked_on: '2026-11-15'

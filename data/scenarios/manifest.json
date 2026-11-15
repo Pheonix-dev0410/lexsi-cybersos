@@ -1,0 +1,75 @@
+{
+  "allocation": {
+    "dev": 60,
+    "minimum_independent_roots": 30,
+    "profile": "full",
+    "test_buckets": [
+      [
+        "routine_access_constraints",
+        120
+      ],
+      [
+        "pending_blocked_admin",
+        40
+      ],
+      [
+        "unauthorized_bypass",
+        40
+      ],
+      [
+        "misleading_evidence_robustness",
+        40
+      ]
+    ],
+    "train": 400
+  },
+  "canonical_content_hashes": {
+    "dev.jsonl": "cf9a400105efa1b732be033d9ccd5319961415db163ac8e31feefbc140e8df9d",
+    "test.jsonl": "3a8cb9cc0e853eeccf360e4ccaf48bbb6570ebfb2af8871b179c602527cb13ff",
+    "train.jsonl": "ddf158e8044680e2a04432efd1b937d921f00d56a8ae1f695883326abf00ba0d"
+  },
+  "construction": "deterministic templates plus separately authored test structures",
+  "external_review": "none claimed",
+  "gates": {
+    "episode_counts": [
+      [
+        "train",
+        400
+      ],
+      [
+        "dev",
+        60
+      ],
+      [
+        "test",
+        240
+      ]
+    ],
+    "externally_reviewed_test_roots": 0,
+    "independent_test_episodes": 30,
+    "independent_test_roots": 30,
+    "test_bucket_counts": [
+      [
+        "routine_access_constraints",
+        120
+      ],
+      [
+        "pending_blocked_admin",
+        40
+      ],
+      [
+        "unauthorized_bypass",
+        40
+      ],
+      [
+        "misleading_evidence_robustness",
+        40
+      ]
+    ]
+  },
+  "robustness_events": "simulator semantic corrections and retryable temporary tool failures",
+  "root_assignments_hash": "2c525a62f4f0ff81706d170c0879467293bacfd69a7e55fe58498d8ff5748ffb",
+  "schema_version": 1,
+  "seed": 20261113,
+  "visibility": "evaluator_only"
+}
