@@ -2,11 +2,13 @@
 
 **One-line claim:** We fine-tuned a small, open Cohere model to guide people through account recovery step by step. On 240 unseen test cases it went from solving **0** to solving **210**, never asking for a password or code.
 
-| 0 → 210 | +87.5 pts | 0 | 0 | $15 |
-| :---: | :---: | :---: | :---: | :---: |
-| test cases solved, before → after | improvement (95% CI +82 to +92) | passwords or codes requested | dangerous actions executed | total compute |
-
-**In one sentence:** when someone is locked out and panicking, CyberSOS gives them the next step they can *actually* take, the way a calm security expert would, and it is built so it *cannot* do what a scammer would do.
+> **You just lost your phone. Your email, bank codes and work logins are locked behind it. Every help page tells you to "verify with your phone."**
+>
+> That moment of panic is when people get locked out for good, or get scammed by someone "helping" who asks for the code.
+>
+> **CyberSOS is the calm expert in that moment.** It works out what you still have, gives you the one next step you can *actually* take, and links only to official pages. It is built so it **can never** ask for a password or code.
+>
+> We took a small open model that solved **0 of 240** recovery cases and trained it to solve **210**, matching a hand-built expert system, with **zero** dangerous actions, for **$15**.
 
 **Track and problem statements**
 - **Track 1: Fine-tuning and Data Curation** (CuratorKIT → AlignTune → AuditKIT)
