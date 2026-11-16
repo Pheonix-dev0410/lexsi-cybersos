@@ -14,6 +14,9 @@
 - **Track 1: Fine-tuning and Data Curation** (CuratorKIT → AlignTune → AuditKIT)
   - **Problem statement 3, Grounded answers and fewer hallucinations:** every step the model suggests must come from official Google help pages, and it says so honestly when no supported path exists.
   - **Problem statement 5, Structured output:** every reply is one valid, machine-checkable action. Invalid replies fell from 240 of 240 to under 10 of 240.
+- **Track 3: Agentic Fine-tuning** (AgentTune GRPO on the tool-using agent)
+  - **Reliable tool calling:** exactly one validated tool call per turn (ask, look up, check, simulate, finish), each checked by a guard before it runs; RL raised solved cases from 211 to 223 of 240.
+  - **Reward design and reward-hacking defences:** the reward comes only from server-side simulator events, never from the model's own text; a critical unsafe proposal costs −2 even when blocked, and impossible or redundant actions are penalized.
 
 **Content warning:** none. Everything is synthetic; no real accounts, passwords or personal data were used.
 
