@@ -12,11 +12,11 @@
 
 **Track and problem statements**
 - **Track 1: Fine-tuning and Data Curation** (CuratorKIT → AlignTune → AuditKIT)
-  - **Grounded answers and fewer hallucinations:** every step it suggests comes from 16 rules written from official Google help pages, links come only from that official list, and it says honestly when no self-service path exists.
-  - **Structured output and extraction:** every reply is one valid, machine-checkable action. Invalid replies fell from 240 of 240 to 8 of 240.
+  - **Problem statement 3, Grounded answers and fewer hallucinations:** every step it suggests comes from 16 rules written from official Google help pages, links come only from that official list, and it says honestly when no self-service path exists.
+  - **Problem statement 5, Structured output and extraction:** every reply is one valid, machine-checkable action. Invalid replies fell from 240 of 240 to 8 of 240.
 - **Track 3: Agentic Fine-tuning** (AgentTune reinforcement learning on a tool-using agent)
-  - **Reliable tool calling:** exactly one tool call per turn (ask a question, look up a rule, check a step, try a step, finish), each checked by a safety guard before it runs.
-  - **Reward design and reward-hacking defences:** the model is rewarded only for what the simulator verifies really happened, never for what the model claims; any unsafe suggestion is heavily penalized even when it is blocked.
+  - **Problem statement 1, Reliable tool calling:** exactly one tool call per turn (ask a question, look up a rule, check a step, try a step, finish), each checked by a safety guard before it runs.
+  - **Problem statement 9, Reward design and reward-hacking defences:** the model is rewarded only for what the simulator verifies really happened, never for what the model claims; any unsafe suggestion is heavily penalized even when it is blocked.
 
 **Content warning:** none. Everything is synthetic; no real accounts, passwords or personal data were used.
 
@@ -48,7 +48,7 @@
 
 **What a good helper must do:** find out which recovery options the person really has, ask when it doesn't know, suggest only steps that are possible and official, and say honestly when the only route is Google's official recovery form or an administrator.
 
-**Our question:** can a small, cheap, open model learn to do this reliably and safely?
+**Our question:** can a small, cheap, open model learn to do this reliably and safely, and can reinforcement learning take it beyond the expert it was taught by?
 
 ### How it works in real life
 
@@ -64,6 +64,19 @@
 - Links come only from our list of official pages; any link the model writes itself is removed.
 - It never asks for a password, verification code, backup code or ID document.
 - Every suggestion passes a safety guard before it runs. Unsafe suggestions still count against the model even when the guard blocks them, so scores are never flattered.
+
+**Threat model (what could go wrong, and our defence):**
+
+| Risk | Defence |
+| --- | --- |
+| A scammer, or the model, asks the person for a code or password | The guard blocks any request for passwords, codes, backup codes, session tokens or ID; the model never sees or stores them |
+| Someone tries to get into another person's account or skip verification | Bypass and takeover requests are refused, and refusing correctly counts as a success (40 such cases in the test set; the final model refused all 40) |
+| Text in the person's message or a tool result tries to give the model new instructions | Messages and tool results are shown to the model as untrusted data; only the guard decides what runs |
+| The model invents a link or a recovery step | Links come only from the official source list; steps must exist in the 16 reviewed rules |
+| The model claims recovery worked when it didn't | Success is decided only by the simulator's logged events; "pending" and "restored" are different outcomes |
+| Reward hacking during RL | The reward is computed from server-side events only, never from the model's text; unsafe tries are penalized even when blocked |
+
+**Related work:** LoRA fine-tuning (Hu et al., 2021); GRPO reinforcement learning (Shao et al., 2024, *DeepSeekMath*); DAgger imitation learning (Ross, Gordon and Bagnell, 2011), which we test as an ablation.
 
 ## Hackathon repos (kits) used
 
@@ -100,7 +113,8 @@ flowchart LR
 - **Cleaning (CuratorKIT):** 3,062 → 2,958 examples (104 duplicates). Our own checks also screen out secrets, personal data and impossible steps.
 - **Focus benchmark:** the CyberSOS recovery benchmark: 240 locked test cases (plus 60 development and 36 diagnostic cases).
 - **General-capability retention:** not measured; the adapters are meant to be used only for this task.
-- **Environment:** a recovery simulator with five actions (ask a question, look up rules, check a step, try a step, finish), including people who correct themselves and temporary failures.
+- **Environment:** a recovery simulator with five tools (ask a question, look up rules, check a step, try a step, finish), including people who correct themselves and temporary tool failures.
+- **Trajectories:** every test conversation (each tool call, guard decision and result) for every model, plus the 1,200 practice runs used for RL, are published in the HF datasets collection.
 
 ## Metrics, and why these
 
@@ -113,6 +127,20 @@ flowchart LR
 | Refusing legitimate help | lower | A helper that refuses is useless |
 | Invalid replies | lower | Every reply must be a valid action |
 | Questions asked | lower | Less effort for a stressed person |
+
+**What should not get worse:** refusals of legitimate help stayed at 0 for every trained model, and no dangerous action was ever executed (the guard blocked every unsafe suggestion).
+
+**Agent (trajectory) metrics, final model vs. fine-tuned model, 240 test conversations:**
+
+| | Fine-tuned | Final (RL) |
+| --- | --- | --- |
+| Task success | 211 / 240 (87.9%) | **223 / 240 (92.9%)** |
+| Self-recovery cases solved | 53 / 68 | **58 / 68** |
+| Official-help and safe-refusal cases solved | 158 / 172 | **165 / 172** |
+| Tool calls accepted by the guard | 1,916 / 1,960 (97.8%) | 1,914 / 1,958 (97.8%) |
+| Conversations with an invalid tool call | 5 | 8 |
+| Average actions per conversation | 8.2 | 8.2 |
+| Latency per full conversation, median / 95th percentile | 10.3 s / 13.5 s | **9.5 s / 12.9 s** |
 
 **Automatic judge:** none. No AI grades the answers. A deterministic simulator decides every outcome from logged events, and AuditKIT re-scores the recorded conversations independently.
 
@@ -243,10 +271,22 @@ Across the test set, the expert ran out of steps in 26 cases; the final model di
 - **Rudr Pratap Singh**: recovery rules and sources from official help pages; scenario generation, root-level splits and leak checks; CuratorKIT curation and data gates.
 - **Nikunj Kumar**: GPU compute and Modal infrastructure; baselines and AuditKIT scoring; AgentTune integration; AlignTune SFT runs and the DAgger ablation.
 
+**Acknowledgements:** Lexsi Labs for the hackathon kits; Cohere Labs for Tiny Aya. Compute was paid for by the team on Modal.
+
 ## LLM usage statement
 
 Approximately 90% of the code and 85% of this write-up were generated by AI coding assistants, working from a human-written project plan. Humans directed the project: problem choice, the model and compute decisions, and approval of each training and evaluation stage. All reported numbers come from logged runs in the linked repositories, not from model-written claims.
 
 ## References
 
-Lexsi Labs kits (CuratorKIT, AlignTune, AgentTune, AuditKIT); Google Account Help pages listed in `data/sources.yaml`; `CohereLabs/tiny-aya-global` model card.
+- Lexsi Labs kits: CuratorKIT, AlignTune, AgentTune, AuditKIT.
+- Google Account Help pages listed in `data/sources.yaml` (with review dates).
+- `CohereLabs/tiny-aya-global` model card.
+- Hu et al. (2021), *LoRA: Low-Rank Adaptation of Large Language Models*.
+- Shao et al. (2024), *DeepSeekMath* (introduces GRPO).
+- Ross, Gordon and Bagnell (2011), *A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning* (DAgger).
+
+## Changelog
+
+- **v1:** fine-tuned model (AlignTune), 211 of 240 on the locked test (210 in the first run), Track 1.
+- **v2:** reinforcement learning (AgentTune) on the cases the model fails: 223 of 240, above the expert teacher; DAgger ablation; all trained models re-evaluated in the same software build; Track 3 added.
