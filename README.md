@@ -14,11 +14,12 @@ CyberSOS covers personal Google accounts and Android devices in three situations
 | Scenarios: 400 train, 60 dev and 240 locked test episodes (30 independently constructed test roots) | Generated with seed `20261113` |
 | Training rows from verified trajectories (teacher: observed-state planner R on 371 of 400 episodes, oracle route on 29): 3,062 candidates, 2,958 accepted by CuratorKIT (104 exact duplicates) | Generated |
 | Q and R on diagnostic, dev and test | Run on CPU |
-| B0 (untuned Tiny Aya) and B1 (SFT, LoRA r=16, one epoch) on dev and the locked test split | Run on one L40S via Modal (`deploy/modal/`) |
-| B2 (AgentTune GRPO from B1) | **Ran, no usable adapter.** 5 steps on one H200 (8 rollouts per prompt, 64 pilot scenarios): every group had zero reward variance, because B1 is near-deterministic (entropy ≈ 0.001) and all 8 rollouts were identical, so gradients were ~1e-8. Step 6 ran out of GPU memory. B2 was not evaluated |
+| B0 (untuned Tiny Aya) and B1 (SFT, LoRA r=16, one epoch) on dev and the locked test split | Run on Modal (`deploy/modal/`) |
+| B2 (AgentTune GRPO from B1) | **Best policy.** 20 steps on one H200, 8 rollouts per scenario at temperature 1.0, on the training scenarios B1 failed in 1,200 student rollouts (`scripts/rollout_student.py`). A first run at temperature 0.7 on random scenarios had zero reward variance in every group (B1 entropy ≈ 0.001) |
+| B3 (DAgger: R relabels every state B1 reached, 830 new gated rows, SFT from base) | Ablation: fewest unsafe proposals, no gain in objectives |
 | Gradio app with four views and three demo cases | Builds and serves locally; uses R until a checkpoint is supplied |
 
-Test suite: **355 tests**, offline, CPU only, about 15 seconds.
+Test suite: **357 tests**, offline, CPU only, about 15 seconds.
 
 ## Measured results
 
@@ -31,15 +32,19 @@ All rows share one frozen serving contract (`configs/baselines.yaml`): same prom
 | Q: guided questionnaire | 58/68 | 152/172 | 0/240 | 1,588 |
 | R: observed-state planner | 59/68 | 152/172 | 0/240 | — |
 | B0: Tiny Aya, untuned | 0/68 | 0/172 | 0/240 | — |
-| **B1: Tiny Aya + SFT** | **53/68** | **157/172** | 23/240 | 1,502 |
+| B1: Tiny Aya + SFT | 53/68 | 158/172 | 22/240 | 1,502 |
+| **B2: Tiny Aya + SFT + GRPO** | **58/68** | **165/172** | 13/240 | — |
+| B3: Tiny Aya + SFT on DAgger data | 53/68 | 160/172 | **7/240** | — |
 
-B0 → B1: **+87.5 points** safe success, 95% interval [82.4, 92.4] (paired bootstrap over scenario roots, counterfactual pairs resampled together). Dev (60 episodes) agrees: B0 0/60, B1 40/60, Q and R 57/60.
+Objectives met: B0 0, Q 210, R 211, B1 211, **B2 223**, B3 213 of 240. Paired bootstrap over scenario roots (counterfactual pairs resampled together), 95% intervals: B0 → B1 **+87.9 points** [83.0, 92.8]; **B1 → B2 +5.0 points [2.5, 7.8]**; B0 → B2 +92.9 [88.6, 96.8]; B1 → B3 +0.8 [−1.3, 3.2]; B3 → B2 +4.2 [0.9, 7.3]. Dev (60 episodes): B0 0, B1 41, B2 42, B3 32, Q and R 57; B1 → B2 on dev is +1.7 [−7.0, +9.7], so dev alone does not resolve it.
 
 What this shows, plainly:
 
 - **SFT teaches the action contract.** Untuned Tiny Aya chooses plausible actions but wraps every one in a Markdown code fence, so the strict one-action parser rejects all of them (240/240 output-format failures). After SFT, 5/240 episodes have a format error.
-- **B1 is a distillation of R, not an improvement on it.** It matches R on overall objectives (210 vs 211 of 240), handles more boundary cases (157 vs 152) and asks slightly fewer questions, but completes fewer eligible restorations (53 vs 59).
-- **Its errors are decision-timing errors.** In 23 of 240 test episodes B1 proposed a step before its prerequisites were known or finished without server evidence. The guard blocked every one (no critical action executed), and each counts against B1. That is the residual target for AgentTune (B2). B2 ran but found no learning signal: B1's rollouts never differed within a group, so GRPO had nothing to prefer. Raising sampling diversity (temperature, or mixing in B0 rollouts) is the next bounded step.
+- **B1 is a distillation of R, not an improvement on it.** It matches R on overall objectives (211 vs 211 of 240), handles more boundary cases (158 vs 152), but completes fewer eligible restorations (53 vs 59).
+- **B2 improves on its teacher.** GRPO, rewarded only by trusted environment events, lifts objectives to 223/240, eligible completion to 58/68 and boundary handling to 165/172, and cuts episodes with a critical unsafe proposal from 22 to 13 (all blocked by the guard in both).
+- **GRPO needs within-group disagreement.** On a near-deterministic SFT policy, random scenarios give every group identical rewards. Sampling at temperature 1.0 and drawing scenarios only from those the SFT student failed made every group informative.
+- **DAgger trades success for caution.** Relabeling every state B1 reached with R (B3) gives the fewest critical unsafe proposals on test (7/240) but no gain in objectives (+0.8, interval spans 0), and on dev it over-asks (339 → 512 questions; 27/60 budget exhaustions) and scores 32/60, below B1 (−15.0 [−28.8, −3.1]).
 
 How we got here (dev, kept in `runs/superseded-evaluations/`): the first B1 learned from the oracle route, which picks questions from hidden state; it collapsed to the most common route (18/60). Switching the teacher to R, which decides only from observed facts, gave 41/60. Listing the closed set of step ids in the tool signatures removed near-miss invented ids (22 → 0) but left the headline unchanged (40/60).
 
@@ -80,10 +85,12 @@ Model stages (Linux, CUDA, Tiny Aya access accepted):
 .venv/bin/python scripts/train_sft.py --config configs/sft.yaml
 .venv/bin/python scripts/evaluate.py --split dev --checkpoint runs/sft-adapter
 .venv/bin/python scripts/report.py --runs reports/runs --stage sft-residuals
-.venv/bin/python scripts/train_agent.py --config configs/agent.yaml --smoke   # only if the residual gate names a target
+.venv/bin/python scripts/rollout_student.py --checkpoint runs/sft-adapter-v3 --temperature 1.0 --samples 2 --output reports/dagger/student.jsonl
+.venv/bin/python scripts/train_agent.py --config configs/agent.yaml           # GRPO on the scenarios the student failed (B2)
+.venv/bin/python scripts/relabel_on_policy.py reports/dagger/*.jsonl          # DAgger rows: R labels every state the student reached (B3)
 ```
 
-On Modal, `deploy/modal/run_job.sh <job>` runs each of these stages detached on one L40S (see `deploy/modal/README.md`). The base model is pinned to revision `af89d219…` of `CohereLabs/tiny-aya-global` with Transformers 5.23.0 and Torch 2.11.0; after any change to rules or guard sources run `scripts/freeze_serving_contract.py`. Every checkpoint is evaluated under that one frozen serving contract: same prompt, tools, guard, budgets and decoding. Only the weights change.
+On Modal, `deploy/modal/run_job.sh <job>` runs each of these stages detached (H200 for training and evaluation, L40S shards for student rollouts; see `deploy/modal/README.md`). The base model is pinned to revision `af89d219…` of `CohereLabs/tiny-aya-global` with Transformers 5.23.0 and Torch 2.11.0; after any change to rules or guard sources run `scripts/freeze_serving_contract.py`. Every checkpoint is evaluated under that one frozen serving contract: same prompt, tools, guard, budgets and decoding. Only the weights change.
 
 ## How it fits together
 

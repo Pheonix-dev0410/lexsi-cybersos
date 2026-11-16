@@ -33,6 +33,9 @@ class AgentTuneBridge:
         if self._factory is None:
             self._factory = load_patched_rollout_factory(self.config.path('vendor_path'),
                                                          self.config.path('patch_path'))
+        if trainer is not None:
+            # The patched rollout samples at `trainer._temperature`; TRL's GRPOTrainer never sets it.
+            trainer._temperature = self.config.temperature
         if self.forward is not None:
             self.forward.contexts.begin_generation_batch()
         budgets = self.store.budgets

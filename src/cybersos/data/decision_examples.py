@@ -100,10 +100,13 @@ def _observed_state_planner(scenario: Scenario, registry: PlaybookRegistry) -> l
     return [turn.raw_proposal for turn in run_episode(planner, environment).decisions]
 
 
+TEACHER_GENERATOR = ('deterministic teachers (observed-state planner R, else oracle route); '
+                     'simulator replay; no LLM teacher')
 _TEACHERS = (('observed_state_planner', _observed_state_planner), ('oracle_route', _oracle_route))
 
 
-def save_decision_examples(examples: DecisionExamples, directory: str | Path, *, seed: int) -> Record:
+def save_decision_examples(examples: DecisionExamples, directory: str | Path, *, seed: int,
+                           generator: str = TEACHER_GENERATOR) -> Record:
     destination = Path(directory)
     write_jsonl(destination / 'train_candidates.jsonl', examples.rows)
     write_json(destination / 'provenance.json', examples.provenance)
@@ -112,7 +115,7 @@ def save_decision_examples(examples: DecisionExamples, directory: str | Path, *,
     manifest = {'seed': seed, 'candidate_rows': len(examples.rows),
                 'successful_trajectories': len(examples.trajectories),
                 'excluded_episodes': len(examples.exclusions),
-                'generator': 'deterministic teachers (observed-state planner R, else oracle route); simulator replay; no LLM teacher',
+                'generator': generator,
                 'provenance_visibility': 'evaluator_only'}
     write_json(destination / 'manifest.json', manifest)
     if not examples.rows:

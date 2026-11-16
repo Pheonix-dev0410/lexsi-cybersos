@@ -30,6 +30,11 @@ class AgentConfig:
     gradient_accumulation_steps: int = 1
     num_generations: int = 2
     learning_rate: float = 1e-6
+    # GRPO learns only from groups whose rollouts differ; greedy-sharp SFT needs a hotter sampler.
+    temperature: float = 0.7
+    # Rollouts of the SFT student (rollout_student.py); when set, the pilot draws only from
+    # scenarios it failed, since scenarios it always solves give every group the same reward.
+    focus_rollouts_path: str = ''
     precision: str = 'bf16'
     seed: int = 42
 
@@ -42,6 +47,8 @@ class AgentConfig:
                      'gradient_accumulation_steps', 'num_generations'):
             positive_integer(name, getattr(self, name))
         positive_rate('learning_rate', self.learning_rate)
+        if not 0 < self.temperature <= 2:
+            raise ValueError('Sampling temperature must be in (0, 2]')
         if self.pilot_scenarios not in PILOT_SCENARIO_RANGE:
             raise ValueError('The agent pilot uses 32 to 64 training scenarios')
         if self.num_generations < 2 or self.per_device_train_batch_size % self.num_generations:
@@ -63,7 +70,8 @@ class AgentConfig:
             'num_generations': self.num_generations, 'learning_rate': self.learning_rate,
             'max_completion_length': budgets.generation_tokens, 'use_vllm': False,
             'report_to': 'none', 'seed': self.seed, 'remove_unused_columns': False,
-            'warmup_steps': 0, 'logging_steps': 1,
+            'warmup_steps': 0, 'logging_steps': 1, 'temperature': self.temperature,
+            'gradient_checkpointing': True, 'gradient_checkpointing_kwargs': {'use_reentrant': False},
             'bf16': self.precision == 'bf16', 'fp16': self.precision == 'fp16',
         }
 

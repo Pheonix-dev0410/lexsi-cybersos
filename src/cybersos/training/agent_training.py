@@ -17,7 +17,7 @@ from cybersos.training.model_identity_checks import ADAPTER_METADATA, read_adapt
 from cybersos.training.residual_target_gate import require_residual_target
 from cybersos.training.rollout_patch import AGENTTUNE_COMMIT, check_rollout_patch
 from cybersos.training.scenario_store import (
-    ScenarioStore, load_training_scenarios, select_pilot_scenarios,
+    ScenarioStore, failed_scenarios, load_training_scenarios, select_pilot_scenarios,
 )
 from cybersos.training.trajectory_contexts import CONTEXT_VERSION
 from cybersos.training.trajectory_forward import TrajectoryForward
@@ -54,9 +54,11 @@ def train_agent(config: AgentConfig, *, smoke: bool = False) -> dict[str, Any]:
             adapter_configuration(student) != metadata['adapter_configuration']):
         raise ValueError('Warm-started adapter differs from the saved SFT configuration')
     before = snapshot_trainable_adapter(student)
-    pilot = select_pilot_scenarios(load_training_scenarios(config.path('scenarios_path')),
-                                   SMOKE_SCENARIOS if smoke else config.pilot_scenarios,
-                                   seed=config.seed)
+    candidates = load_training_scenarios(config.path('scenarios_path'))
+    if config.focus_rollouts_path:
+        candidates = failed_scenarios(candidates, config.path('focus_rollouts_path'))
+    pilot = select_pilot_scenarios(candidates, min(len(candidates), SMOKE_SCENARIOS if smoke
+                                                   else config.pilot_scenarios), seed=config.seed)
     store = ScenarioStore(pilot, load_project_registry(), tokenizer, budgets, seed=config.seed)
     write_jsonl(destination / 'budget_exhausted_scenarios.jsonl', store.excluded)
     bridge = AgentTuneBridge(store, config, forward=TrajectoryForward(student))

@@ -8,7 +8,7 @@ from typing import Any, Iterable
 from cybersos.data.scenario_loading import episode_from_mapping
 from cybersos.data.scenario_records import Split
 from cybersos.data.serving_budgets import ServingBudgets
-from cybersos.domain import Scenario, TerminalState
+from cybersos.domain import Scenario, TaskOutcome, TerminalState
 from cybersos.playbooks import PlaybookRegistry
 from cybersos.policy import ChatTokenizer, PromptBudgetExceeded, render_observation, serialize_prefix
 from cybersos.serialization import read_jsonl
@@ -34,6 +34,13 @@ def load_training_scenarios(path: str | Path) -> tuple[Scenario, ...]:
     if not episodes or any(episode.split != Split.TRAIN for episode in episodes):
         raise ValueError('Only explicitly labeled training scenarios may enter agent optimization')
     return tuple(episode.scenario for episode in episodes)
+
+
+def failed_scenarios(scenarios: tuple[Scenario, ...], rollouts_path: str | Path) -> tuple[Scenario, ...]:
+    """Scenarios whose recorded student rollout did not meet its objective, in corpus order."""
+    failed = {record['scenario_id'] for path in sorted(Path(rollouts_path).glob('*.jsonl'))
+              for record in read_jsonl(path) if record['outcome'] != TaskOutcome.OBJECTIVE_MET}
+    return tuple(scenario for scenario in scenarios if scenario.scenario_id in failed)
 
 
 def select_pilot_scenarios(scenarios: tuple[Scenario, ...], count: int, *,

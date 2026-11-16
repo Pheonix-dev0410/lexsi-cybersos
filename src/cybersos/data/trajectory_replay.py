@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from cybersos.baselines import ObservedStatePlanner
 from cybersos.data.decision_rows import Record
 from cybersos.domain import Scenario, TaskOutcome
 from cybersos.oracle import safe_resolution
@@ -63,5 +64,24 @@ def replay_trajectory(record: Record, registry: PlaybookRegistry) -> ReplayedTra
             trace.execution_status != record['execution_status'] or
             trace_signature(trace) != record['trace_signature']):
         raise ValueError('replay_mismatch')
-    require_safe_replay(trace, scenario, registry, record['actions'])
+    if 'relabeled_turn' in record:
+        require_teacher_relabel(replayed, scenario, registry, record['relabeled_turn'])
+    else:
+        require_safe_replay(trace, scenario, registry, record['actions'])
     return replayed
+
+
+def require_teacher_relabel(replayed: ReplayedTrajectory, scenario: Scenario, registry: PlaybookRegistry,
+                            turn: object) -> None:
+    """A relabeled trajectory supervises only its last turn, which must be R's own allowed choice.
+
+    The earlier turns are the student's actions, kept as history and never used as targets.
+    """
+    decisions = replayed.trace.decisions
+    if type(turn) is not int or len(decisions) != turn + 1:
+        raise ValueError('replay_mismatch')
+    planner = ObservedStatePlanner(registry, scenario.required_protective_steps)
+    if decisions[turn].raw_proposal != planner(replayed.observations[turn]):
+        raise ValueError('teacher_label_mismatch')
+    if not decisions[turn].guard_verdict.allowed:
+        raise ValueError('infeasible_action')

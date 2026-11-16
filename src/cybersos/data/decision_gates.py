@@ -69,7 +69,8 @@ class DecisionGates:
             raise ValueError('root_provenance_mismatch')
         replayed = self.replay(origin['trajectory_id'])
         turn = origin['turn']
-        if type(turn) is not int or not 0 <= turn < len(replayed.trace.decisions):
+        if (type(turn) is not int or not 0 <= turn < len(replayed.trace.decisions) or
+                turn != record.get('relabeled_turn', turn)):
             raise ValueError('invalid_turn')
         observation = replayed.observations[turn]
         decision = replayed.trace.decisions[turn]

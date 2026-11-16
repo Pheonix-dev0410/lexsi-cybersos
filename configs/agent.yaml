@@ -1,5 +1,5 @@
 sft_adapter_path: runs/sft-adapter-v3
-output_dir: runs/agent-adapter
+output_dir: runs/agent-adapter-v3
 scenarios_path: data/scenarios/train.jsonl
 residuals_path: reports/sft_residuals.md
 patch_path: patches/agenttune_cybersos_rollout.patch
@@ -8,10 +8,12 @@ serving_contract_path: configs/baselines.yaml
 base_manifest_path: configs/base_model.json
 development_scenarios_path: data/scenarios/dev.jsonl
 pilot_scenarios: 64
-max_steps: 10
+max_steps: 20
 per_device_train_batch_size: 8
 gradient_accumulation_steps: 1
 num_generations: 8
 learning_rate: 0.00001
+temperature: 1.0
+focus_rollouts_path: reports/dagger
 precision: bf16
 seed: 42

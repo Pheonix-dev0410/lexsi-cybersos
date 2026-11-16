@@ -22,7 +22,12 @@ class TransformersPolicy:
     def __init__(self, contract: ServingContract, *, root: str | Path = PROJECT_ROOT,
                  adapter_path: str | Path | None = None,
                  base_manifest: str | Path | None = None,
-                 clock: Callable[[], float] = monotonic) -> None:
+                 clock: Callable[[], float] = monotonic,
+                 sampling_temperature: float | None = None) -> None:
+        # Serving stays greedy; sampling exists only to collect exploratory training rollouts.
+        if sampling_temperature is not None and not 0 < sampling_temperature <= 2:
+            raise ValueError('Sampling temperature must be in (0, 2]')
+        self._temperature = sampling_temperature
         contract.validate_implementation(root=root, require_resolved=True)
         self.contract = contract
         base = contract.fields['base_model']
@@ -105,7 +110,8 @@ class TransformersPolicy:
         timeout = Deadline()
         with torch.inference_mode():
             output = model.generate(
-                **inputs, max_new_tokens=budgets['generation_tokens'], do_sample=False,
+                **inputs, max_new_tokens=budgets['generation_tokens'],
+                do_sample=self._temperature is not None, temperature=self._temperature, top_p=None,
                 num_beams=1, use_cache=True, eos_token_id=end_id,
                 pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else end_id,
                 stopping_criteria=StoppingCriteriaList([timeout]))

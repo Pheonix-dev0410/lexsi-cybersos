@@ -1,6 +1,6 @@
 # Modal jobs
 
-GPU stages run on Modal in the `nikunjkumar1405` workspace (it has GPU access), one L40S per job. Code and data are
+GPU stages run on Modal in the `nikunjkumar1405` workspace (it has GPU access), one H200 per training or evaluation job; student rollouts run as parallel L40S shards. Code and data are
 mounted from this repository on every run; outputs go to the `cybersos-artifacts` volume.
 The Hugging Face token comes from the Modal secret `cybersos-huggingface`. `run_job.sh` pins the workspace, so the active Modal profile does not matter.
 

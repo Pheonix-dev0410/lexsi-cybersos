@@ -70,15 +70,17 @@ def diagnose_base() -> None:
 
 
 @app.function(volumes={VOLUME_ROOT: volume}, timeout=3600)
-def render_training_file() -> None:
-    _run_script('scripts/render_decisions.py', '--tokenizer', BASE_DIR)
+def render_training_file(curated_dir: str = 'data/curated/train',
+                         output: str = 'data/rendered/train_alpaca.jsonl') -> None:
+    _run_script('scripts/render_decisions.py', '--tokenizer', BASE_DIR,
+                '--curated-dir', curated_dir, '--output', output)
 
 
 @app.function(**GPU_JOB, timeout=6 * 3600)
-def train_sft(smoke: bool = True, output_dir: str = '') -> None:
+def train_sft(smoke: bool = True, output_dir: str = '', config: str = 'configs/sft.yaml') -> None:
     # Adapters are never overwritten, so each run that keeps its predecessor names a new directory.
     output = output_dir or ('runs/sft-smoke' if smoke else '')
-    _run_script('scripts/train_sft.py', '--config', 'configs/sft.yaml',
+    _run_script('scripts/train_sft.py', '--config', config,
                 *(['--smoke'] if smoke else []), *(['--output-dir', output] if output else []))
 
 
@@ -92,3 +94,19 @@ def evaluate(split: str, checkpoint: str, policy_label: str = '') -> None:
 def train_agent(smoke: bool = True) -> None:
     _run_script('scripts/train_agent.py', '--config', 'configs/agent.yaml',
                 *(['--smoke', '--output-dir', 'runs/agent-smoke'] if smoke else []))
+
+
+# Inference only, so a smaller GPU per shard; the shards run in parallel.
+@app.function(gpu='L40S', volumes={VOLUME_ROOT: volume}, secrets=[huggingface], timeout=3 * 3600)
+def rollout_student(checkpoint: str, shard: int, shards: int, temperature: float = 0.0,
+                    samples: int = 1) -> None:
+    tag = f't{temperature:g}x{samples}' if temperature else 'greedy'
+    _run_script('scripts/rollout_student.py', '--checkpoint', checkpoint, '--shard', str(shard),
+                '--shards', str(shards), '--samples', str(samples),
+                '--output', f'reports/dagger/student-{tag}-{shard:02d}-of-{shards:02d}.jsonl',
+                *(['--temperature', str(temperature)] if temperature else []), *BASE_MANIFEST)
+
+
+@app.local_entrypoint()
+def rollout_student_shards(checkpoint: str = 'runs/sft-adapter-v3', shards: int = 10) -> None:
+    list(rollout_student.starmap([(checkpoint, shard, shards) for shard in range(shards)]))
