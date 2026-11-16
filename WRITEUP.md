@@ -267,9 +267,9 @@ Across the test set, the expert ran out of steps in 26 cases; the final model di
 
 ## Teammates
 
-- **Pranav Garg**: serving contract and compact prompt design; observed-state teacher; the RL fix (failure-focused, sampled GRPO) that beat the expert; locked test evaluation.
-- **Rudr Pratap Singh**: recovery rules and sources from official help pages; scenario generation, root-level splits and leak checks; CuratorKIT curation and data gates.
-- **Nikunj Kumar**: GPU compute and Modal infrastructure; baselines and AuditKIT scoring; AgentTune integration; AlignTune SFT runs and the DAgger ablation.
+- **Pranav Garg** ([@Pheonix-dev0410](https://github.com/Pheonix-dev0410)): serving contract and compact prompt design; observed-state teacher; the RL fix (failure-focused, sampled GRPO) that beat the expert; locked test evaluation.
+- **Rudr Pratap Singh** ([@rzzdr](https://github.com/rzzdr)): recovery rules and sources from official help pages; scenario generation, root-level splits and leak checks; CuratorKIT curation and data gates.
+- **Nikunj Kumar** ([@immortal1405](https://github.com/immortal1405)): GPU compute and Modal infrastructure; baselines and AuditKIT scoring; AgentTune integration; AlignTune SFT runs and the DAgger ablation.
 
 **Acknowledgements:** Lexsi Labs for the hackathon kits; Cohere Labs for Tiny Aya. Compute was paid for by the team on Modal.
 
