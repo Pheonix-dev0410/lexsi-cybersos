@@ -224,7 +224,7 @@ Across the test set, the expert ran out of steps in 26 cases; the final model di
 
 ## Cost / ROI
 
-- **Total compute bill: about $25** (Modal cloud GPUs: L40S and H200, for training, practice runs and every evaluation).
+- **Compute used:** about **12 GPU-hours** on Modal (L40S and H200 GPUs), covering fine-tuning, reinforcement learning, the 1,200 practice runs and every evaluation. **Total bill: about $25.**
 - **Running it:** about 8–10 seconds per complete recovery conversation on one GPU, roughly **$5 per 1,000 people helped** on a mid-range cloud GPU, before any serving optimisation. That is cheap enough to offer free.
 
 ## Limitations
